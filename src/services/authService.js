@@ -2,14 +2,15 @@ const API_BASE_URL = import.meta.env.VITE_APP_API_URL;
 
 
 const convertApiUserToAppUser = (apiUser) => {
+  const autor = apiUser.autor;
   return {
-    id: apiUser._id,
-    name: apiUser.username,
-    type: apiUser.role, // 'admin', 'invitado', 'usuario'
-    accessCount: apiUser.accessCount,
-    isActive: apiUser.isActive,
-    createdAt: apiUser.createdAt,
-    updatedAt: apiUser.updatedAt
+    id: autor._id,
+    name: autor.username,
+    type: autor.role, // 'admin', 'invitado', 'usuario'
+    accessCount: autor.accessCount,
+    isActive: autor.isActive,
+    createdAt: autor.createdAt,
+    updatedAt: autor.updatedAt
   };
 };
 
@@ -28,8 +29,9 @@ export const authService = {
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.message}`);
       }
-
+      console.log("ruta:",`${API_BASE_URL}/author/guest`);
       const apiUser = await response.json();
+      console.log("Usuario invitado obtenido: ",apiUser);
       return convertApiUserToAppUser(apiUser);
     } catch (error) {
       console.error('Error al obtener usuario invitado:', error);

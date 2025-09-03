@@ -41,6 +41,7 @@ function App() {
   const [deleteDialog, setDeleteDialog] = useState({ open: false, template: null });
   const [actionLoading, setActionLoading] = useState(false);
 
+  
   // Manejar splash screen
   useEffect(() => {
     if (!authLoading) {
@@ -136,6 +137,7 @@ function App() {
       if (result.success) {
         console.log('Login exitoso:', result.user.name);
         // Refrescar plantillas después del login
+
         await refreshTemplates();
         return result;
       } else {

@@ -1,7 +1,7 @@
 // Componente SplashScreen
 import { useEffect, useState } from 'react';
 
-const SplashScreen = ({ onComplete }) => {
+export const SplashScreen = ({ onComplete }) => {
   const [loading, setLoading] = useState(0);
 
   useEffect(() => {
@@ -22,21 +22,10 @@ const SplashScreen = ({ onComplete }) => {
   return (
     <div className="fixed inset-0 z-[100] bg-[#F8FAFC] flex items-center justify-center">
       <div className="text-center">
-        {/* Logo animado */}
+        {/* Logo*/}
         <div className="relative mb-8">
           <div className="w-20 h-20 bg-[#00A4EF] rounded-xl flex items-center justify-center mx-auto shadow-[0_4px_16px_rgba(0,164,239,0.15)] animate-pulse">
             <span className="text-white font-bold text-2xl">FC</span>
-          </div>
-          
-          {/* Anillo de carga */}
-          <div className="absolute inset-0 w-20 h-20 rounded-xl border-4 border-[#E3F2FD] mx-auto">
-            <div 
-              className="absolute inset-0 rounded-xl border-4 border-transparent border-t-[#00A4EF] transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]"
-              style={{ 
-                transform: `rotate(${loading * 3.6}deg)`,
-                animation: 'spin 1s linear infinite'
-              }}
-            />
           </div>
         </div>
 
@@ -74,22 +63,15 @@ const SplashScreen = ({ onComplete }) => {
           </div>
         </div>
 
-        {/* Versión */}
+        
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
           <p className="text-xs text-[#90A4AE]">
-            FastCRM v1.0 - Desarrollado para equipos técnicos
+            FastCRM v1.0
           </p>
         </div>
       </div>
 
-      <style jsx>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
 
-export default SplashScreen;

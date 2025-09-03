@@ -5,28 +5,29 @@ import { authService } from '../services/authService';
 import { useAuthStorage } from './useLocalStorage';
 
 export const useAuth = () => {
-  const { user: savedUser, saveUser, logout: clearStorage, isLoggedIn } = useAuthStorage();
+  const { user: savedUser, saveUser, logout: clearStorage } = useAuthStorage();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Inicializar usuario al cargar la app
+  // Inicializar usuario al cargar la app
   useEffect(() => {
     const initializeUser = async () => {
       try {
         setLoading(true);
-        if (savedUser && isLoggedIn()) {
-          // Usuario logueado previamente
-          setUser(savedUser);
+        if (savedUser && savedUser.type !== 'invitado') {
+          setUser(savedUser); // Usuario logueado 
         } else {
-          // Cargar usuario invitado por defecto
-          const guestUser = await authService.getGuestUser();
+          const guestUser = await authService.getGuestUser(); // Usuario invitado por defecto
           setUser(guestUser);
         }
+
       } catch (error) {
         console.error('Error al inicializar usuario:', error);
         setError('Error al cargar la aplicación');
-        // Fallback a usuario invitado local
+
+        // Fallback defensivo
         setUser({
           id: '68b32dccd8f3dc2924b21840',
           name: 'invitado',
@@ -36,8 +37,10 @@ export const useAuth = () => {
         setLoading(false);
       }
     };
+
     initializeUser();
   }, []);
+
 
 
   // Login
@@ -46,11 +49,11 @@ export const useAuth = () => {
       setLoading(true);
       setError(null);
       const loggedUser = await authService.loginUser(credentials);
-      
+
       // Guardar en localStorage y estado
       saveUser(loggedUser);
       setUser(loggedUser);
-      
+
       return { success: true, user: loggedUser };
     } catch (error) {
       setError(error.message);
@@ -66,13 +69,13 @@ export const useAuth = () => {
       setLoading(true);
       setError(null);
       await authService.registerUser(userData);
-      
+
       // Después del registro, hacer login automático
       const loginResult = await login({
         username: userData.username,
         password: userData.password
       });
-      
+
       return loginResult;
     } catch (error) {
       setError(error.message);
@@ -86,14 +89,14 @@ export const useAuth = () => {
   const logout = async () => {
     try {
       setLoading(true);
-      
+
       // Limpiar localStorage
       clearStorage();
-      
+
       // Cargar usuario invitado
       const guestUser = await authService.getGuestUser();
       setUser(guestUser);
-      
+
     } catch (error) {
       console.error('Error al hacer logout:', error);
       // Fallback a invitado local
@@ -109,18 +112,34 @@ export const useAuth = () => {
 
   // Verificar permisos
   const canModifyTemplate = (template) => {
-    if (!user) return false;
+    if (!user || !template) return false;
+
     if (user.type === 'admin') return true;
-    if (user.type === 'invitado') return template.author === user.id;
-    return template.author === user.id;
+    if (user.type === 'invitado') return false;
+
+    const templateAuthorId = template.author?.id || template.author;
+    const userId = user.id;
+
+    console.log('[PERMISOS] Comparando autor:', {
+      templateAuthorId,
+      userId,
+      resultado: String(templateAuthorId) === String(userId)
+    });
+
+    return String(templateAuthorId) === String(userId);
   };
 
+
   const canViewTemplate = (template) => {
-    if (!user) return false;
+    if (!user || !template) return false;
+
     if (user.type === 'admin') return true;
     if (user.type === 'invitado') return template.authorRole === 'invitado';
-    return template.author === user.id;
+
+    const templateAuthorId = template.author?.id || template.author;
+    return String(templateAuthorId) === String(user.id);
   };
+
 
   return {
     user,

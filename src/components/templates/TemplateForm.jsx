@@ -17,6 +17,7 @@ export const TemplateForm = ({ template, onSave, onCancel }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        console.log('[TemplateForm] Submitting plantilla con labels:', formData.labels);
         if (formData.content.trim()) {
             onSave({
                 ...template,

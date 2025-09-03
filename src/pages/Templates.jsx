@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import {TEMPLATE_TYPES} from '../utils/constants';
+import { TEMPLATE_TYPES } from '../utils/constants';
 import { TemplateCard } from '../components/templates/TemplateCard';
 import { Card } from '../components/ui/Card';
-import { Search, Filter, Eye } from 'lucide-react'; 
+import { Search, Filter, Eye } from 'lucide-react';
 
 
 // Componente principal de Templates
@@ -12,23 +12,32 @@ export const Templates = ({ user, templates, onEdit, onDelete }) => {
 
   // Filtrar plantillas según el tipo de usuario
   const filteredTemplates = templates.filter(template => {
+    const author = template.author;
     if (user.type === 'admin') return true;
-    if (user.type === 'invitado') return template.author.type === 'invitado';
-    return template.author.type === 'usuario' && template.author.name === user.name;
+    if (user.type === 'invitado') {
+      return typeof author === 'object' && author.type === 'invitado';
+    }
+    return typeof author === 'object' &&
+      author.type === 'usuario' &&
+      author.name === user.name;
   });
 
   const canModify = (template) => {
+    const author = template.author;
     if (user.type === 'admin') return true;
-    if (user.type === 'invitado') return template.author.type === 'invitado';
-    return template.author.name === user.name;
+    if (user.type === 'invitado') {
+      return typeof author === 'object' && author.type === 'invitado';
+    }
+    return typeof author === 'object' && author.name === user.name;
   };
+
 
   return (
     <div className="space-y-6">
       {/* Header con búsqueda y filtros */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <h1 className="text-2xl font-bold text-[#263238]">Plantillas</h1>
-        
+
         <div className="flex gap-3 w-full sm:w-auto">
           <div className="relative flex-1 sm:w-64">
             <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#90A4AE]" />
@@ -40,7 +49,7 @@ export const Templates = ({ user, templates, onEdit, onDelete }) => {
               className="w-full pl-10 pr-4 py-2 border border-[#E3F2FD] rounded-md focus:outline-none focus:ring-3 focus:ring-[rgba(0,164,239,0.1)] focus:border-[#00A4EF]"
             />
           </div>
-          
+
           <div className="relative">
             <Filter size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#90A4AE]" />
             <select
@@ -68,7 +77,7 @@ export const Templates = ({ user, templates, onEdit, onDelete }) => {
                 <Eye size={48} className="mx-auto mb-2" />
                 <p className="text-lg">No hay plantillas disponibles</p>
                 <p className="text-sm">
-                  {user.type === 'invitado' 
+                  {user.type === 'invitado'
                     ? 'Crea tu primera plantilla para comenzar'
                     : 'Inicia sesión para ver tus plantillas'
                   }
@@ -79,6 +88,7 @@ export const Templates = ({ user, templates, onEdit, onDelete }) => {
         ) : (
           filteredTemplates.map(template => (
             <TemplateCard
+              user={user}
               key={template._id}
               template={template}
               onEdit={onEdit}
