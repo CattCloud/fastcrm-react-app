@@ -96,7 +96,7 @@ export const TemplateCard = ({ user, template, onEdit, onDelete, canModify }) =>
 
       {/* Zona inferior */}
       <div className="text-xs text-[#90A4AE] flex items-center justify-between mt-2">
-        <span>Por: {template.author.name}</span>
+        <span>Por: {template.author?.name || 'Desconocido'}</span>
         <span>{formatDate(template.createdAt)}</span>
       </div>
     </Card>

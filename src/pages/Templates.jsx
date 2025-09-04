@@ -2,33 +2,60 @@ import { useState } from 'react';
 import { TEMPLATE_TYPES } from '../utils/constants';
 import { TemplateCard } from '../components/templates/TemplateCard';
 import { Card } from '../components/ui/Card';
-import { Search, Filter, Eye } from 'lucide-react';
+import { Search, Eraser, Filter, Eye } from 'lucide-react';
+import { searchService } from '../services/searchService';
+import { notify } from '../utils/notify';
 
 
-// Componente principal de Templates
 export const Templates = ({ user, templates, onEdit, onDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [searchedTemplates, setSearchedTemplates] = useState(null); // ← null al inicio
+  const [loading, setLoading] = useState(false);
 
-  // Filtrar plantillas según el tipo de usuario
-  const filteredTemplates = templates.filter(template => {
-    const author = template.author;
-    if (user.type === 'admin') return true;
-    if (user.type === 'invitado') {
-      return typeof author === 'object' && author.type === 'invitado';
+  const handleSearch = async () => {
+    if (searchTerm.trim().length < 2) return;
+
+    setLoading(true);
+    try {
+      let results = [];
+      const normalizedType = filterType.trim().toLowerCase() || null;
+
+      if (user.type === 'admin') {
+        results = await searchService.searchByKeywordForAdmin(searchTerm, normalizedType);
+      } else if (user.type === 'invitado') {
+        results = await searchService.searchByKeywordAndRole(searchTerm, 'invitado', normalizedType);
+      } else {
+        results = await searchService.searchByKeywordAndAuthorId(searchTerm, user.id, normalizedType);
+      }
+      setSearchedTemplates(results);
+    } catch (e) {
+      console.error('Error en búsqueda:', e);
+    } finally {
+      setLoading(false);
     }
-    return typeof author === 'object' &&
-      author.type === 'usuario' &&
-      author.name === user.name;
+  };
+
+  // Decide qué conjunto usar: búsqueda o inicial
+  const templatesToRender = searchedTemplates ?? templates;
+
+  // Filtro por tipo
+  const filteredTemplates = templatesToRender.filter(template => {
+    if (!filterType) return true;
+    return template.type === filterType;
   });
 
   const canModify = (template) => {
     const author = template.author;
     if (user.type === 'admin') return true;
-    if (user.type === 'invitado') {
-      return typeof author === 'object' && author.type === 'invitado';
-    }
-    return typeof author === 'object' && author.name === user.name;
+    if (user.type === 'invitado') return author?.type === 'invitado';
+    return author?.name === user.name;
+  };
+
+  const handleClearSearch = () => {
+    notify.success("La búsqueda se ha limpiado con exito");
+    setSearchTerm('');
+    setSearchedTemplates(null);
   };
 
 
@@ -39,16 +66,33 @@ export const Templates = ({ user, templates, onEdit, onDelete }) => {
         <h1 className="text-2xl font-bold text-[#263238]">Plantillas</h1>
 
         <div className="flex gap-3 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-64">
-            <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#90A4AE]" />
+          <div className="flex sm:w-64 relative">
+            {/* Input */}
             <input
               type="text"
               placeholder="Buscar plantillas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-[#E3F2FD] rounded-md focus:outline-none focus:ring-3 focus:ring-[rgba(0,164,239,0.1)] focus:border-[#00A4EF]"
+              className="w-full pl-4 pr-10 py-2 border border-[#E3F2FD] rounded-md focus:outline-none focus:ring-3 focus:ring-[rgba(0,164,239,0.1)] focus:border-[#00A4EF]"
             />
+
+            {/* Botón con ícono */}
+            <button
+              onClick={handleSearch}
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 p-2 rounded-md text-[#00A4EF] hover:bg-[#E3F2FD]"
+            >
+              <Search size={18} />
+            </button>
           </div>
+
+
+          <button
+            onClick={handleClearSearch}
+            className="flex items-center gap-2 px-4 py-2 bg-[#ECEFF1] text-[#263238] rounded-md hover:bg-[#CFD8DC]"
+          >
+            <Eraser size={18} />
+
+          </button>
 
           <div className="relative">
             <Filter size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#90A4AE]" />
@@ -70,7 +114,9 @@ export const Templates = ({ user, templates, onEdit, onDelete }) => {
 
       {/* Grid de plantillas */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredTemplates.length === 0 ? (
+        {loading ? (
+          <Card className="p-12 text-center">Buscando plantillas...</Card>
+        ) : filteredTemplates.length === 0 ? (
           <div className="col-span-full">
             <Card className="p-12 text-center">
               <div className="text-[#90A4AE] mb-4">
@@ -79,8 +125,7 @@ export const Templates = ({ user, templates, onEdit, onDelete }) => {
                 <p className="text-sm">
                   {user.type === 'invitado'
                     ? 'Crea tu primera plantilla para comenzar'
-                    : 'Inicia sesión para ver tus plantillas'
-                  }
+                    : 'Inicia sesión para ver tus plantillas'}
                 </p>
               </div>
             </Card>
