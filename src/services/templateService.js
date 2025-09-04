@@ -56,7 +56,7 @@ export const templateService = {
             const response = await fetch(`${API_BASE_URL}/template/rol/${role}`);
             if (!response.ok) throw new Error(`Error ${response.status}: ${response.message}`);
             const data = await response.json();
-            console.log("Plantillas por rol obtenidas:", data);
+            //console.log("Plantillas por rol obtenidas:", data);
             return data.map(convertApiTemplateToAppTemplate);
         } catch (e) {
             console.error("Error al obtener plantillas por rol", e);
@@ -112,7 +112,7 @@ export const templateService = {
             }
 
             const data = await response.json();
-            console.log('Plantilla actualizada:', data);
+            //console.log('Plantilla actualizada:', data);
             return convertApiTemplateToAppTemplate(data.template);
         } catch (e) {
             console.error('Error al actualizar plantilla', e);

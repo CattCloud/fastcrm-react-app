@@ -9,22 +9,25 @@ import { SplashScreen } from './components/ui/SplashScreen';
 import { useAuth } from './hooks/useAuth';
 import { useTemplates } from './hooks/useTemplates';
 import { LoadingError } from './components/ui/LoadingError';
+import { notify } from './utils/notify';
+import { Toaster } from 'sonner';
+
 
 function App() {
   // Estados de autenticación y carga
-  const { 
-    user, 
-    loading: authLoading, 
-    error: authError, 
-    login, 
+  const {
+    user,
+    loading: authLoading,
+    error: authError,
+    login,
     register,
     logout,
     canModifyTemplate,
-    canViewTemplate 
+    canViewTemplate
   } = useAuth();
 
-  const { 
-    templates, 
+  const {
+    templates,
     loading: templatesLoading,
     error: templatesError,
     createTemplate,
@@ -41,7 +44,8 @@ function App() {
   const [deleteDialog, setDeleteDialog] = useState({ open: false, template: null });
   const [actionLoading, setActionLoading] = useState(false);
 
-  
+
+  //localStorage.clear();
   // Manejar splash screen
   useEffect(() => {
     if (!authLoading) {
@@ -57,19 +61,17 @@ function App() {
   const handleCreateTemplate = async (templateData) => {
     try {
       setActionLoading(true);
-      
+
       const templateToCreate = {
         ...templateData,
         author: user.id // Usar el ID del usuario actual
       };
-      
+
       await createTemplate(templateToCreate);
       setCurrentPage('templates');
-      
-      // Mostrar notificación de éxito (opcional)
-      console.log('Plantilla creada exitosamente');
-      
+      notify.success('Plantilla creada exitosamente');
     } catch (error) {
+      notify.error('Error al crear la plantilla');
       console.error('Error al crear plantilla:', error);
       // Aquí puedes mostrar un toast o modal de error
     } finally {
@@ -80,14 +82,13 @@ function App() {
   const handleEditTemplate = async (templateData) => {
     try {
       setActionLoading(true);
-      
+
       await updateTemplate(templateData._id, templateData);
       setEditingTemplate(null);
       setCurrentPage('templates');
-      
-      console.log('Plantilla actualizada exitosamente');
-      
+      notify.success('Plantilla actualizada exitosamente');
     } catch (error) {
+      notify.error('Error al editar la plantilla');
       console.error('Error al actualizar plantilla:', error);
     } finally {
       setActionLoading(false);
@@ -99,21 +100,20 @@ function App() {
     if (canModifyTemplate(template)) {
       setDeleteDialog({ open: true, template });
     } else {
-      console.warn('No tienes permisos para eliminar esta plantilla');
-      // Mostrar mensaje de error
+      notify.info('No tienes permisos para eliminar esta plantilla');
     }
   };
 
   const confirmDelete = async () => {
     try {
       setActionLoading(true);
-      
+
       await deleteTemplate(deleteDialog.template._id);
       setDeleteDialog({ open: false, template: null });
-      
-      console.log('Plantilla eliminada exitosamente');
-      
+      notify.success('Plantilla eliminada exitosamente');
+
     } catch (error) {
+      notify.error('Error al eliminar la plantilla');
       console.error('Error al eliminar plantilla:', error);
     } finally {
       setActionLoading(false);
@@ -125,7 +125,7 @@ function App() {
       setEditingTemplate(template);
       setCurrentPage('edit');
     } else {
-      console.warn('No tienes permisos para editar esta plantilla');
+      notify.info('No tienes permisos para editar esta plantilla');
     }
   };
 
@@ -133,18 +133,28 @@ function App() {
   const handleLogin = async (credentials) => {
     try {
       const result = await login(credentials);
-      
-      if (result.success) {
-        console.log('Login exitoso:', result.user.name);
-        // Refrescar plantillas después del login
+      console.log('Resultado de login:', result);
 
+      if (result.success) {
         await refreshTemplates();
+        notify.success("Bienvenido " + result.user.name + "!");
         return result;
       } else {
-        return result; // Contiene el error
+        switch (result.tipo) {
+          case "username":
+            notify.error("Usuario no encontrado");
+            break;
+          case "password":
+            notify.error("Contraseña incorrecta");
+            break;
+          default:
+            notify.error(result.message || "Error en el login");
+        }
+        return result;
       }
     } catch (error) {
       console.error('Error en login:', error);
+      notify.error("Error de conexión con el servidor");
       return { success: false, error: 'Error de conexión' };
     }
   };
@@ -153,15 +163,16 @@ function App() {
   const handleRegister = async (userData) => {
     try {
       const result = await register(userData);
-      
+
       if (result.success) {
-        console.log('Registro exitoso:', result.user.name);
         await refreshTemplates();
+        notify.success('Registro exitoso:', result.user.name);
         return result;
       } else {
         return result;
       }
     } catch (error) {
+      notify.error("Error de conexión con el servidor");
       console.error('Error en registro:', error);
       return { success: false, error: 'Error de conexión' };
     }
@@ -173,9 +184,10 @@ function App() {
       await logout();
       setCurrentPage('templates'); // Volver a templates
       setEditingTemplate(null); // Limpiar edición
-      console.log('Logout exitoso');
+      notify.success('Logout exitoso');
     } catch (error) {
       console.error('Error en logout:', error);
+      notify.error("Error de conexión con el servidor");
     }
   };
 
@@ -247,6 +259,8 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
+      <Toaster richColors position="top-center" />
+
       {/* Header */}
       <Header
         user={user}
@@ -295,6 +309,7 @@ function App() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

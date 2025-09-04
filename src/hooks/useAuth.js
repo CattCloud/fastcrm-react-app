@@ -43,25 +43,31 @@ export const useAuth = () => {
 
 
 
-  // Login
-  const login = async (credentials) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const loggedUser = await authService.loginUser(credentials);
+const login = async (credentials) => {
+  try {
+    setLoading(true);
+    setError(null);
 
-      // Guardar en localStorage y estado
-      saveUser(loggedUser);
-      setUser(loggedUser);
+    const result = await authService.loginUser(credentials);
 
-      return { success: true, user: loggedUser };
-    } catch (error) {
-      setError(error.message);
-      return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
+    if (!result.success) {
+      setError(result.message);
+      return result;
     }
-  };
+
+    // Login exitoso
+    saveUser(result.user);
+    setUser(result.user);
+
+    return { success: true, user: result.user };
+  } catch (error) {
+    setError(error.message);
+    return { success: false, error: error.message };
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // Register
   const register = async (userData) => {

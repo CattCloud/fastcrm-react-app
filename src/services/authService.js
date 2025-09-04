@@ -29,9 +29,9 @@ export const authService = {
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.message}`);
       }
-      console.log("ruta:",`${API_BASE_URL}/author/guest`);
+      console.log("ruta:", `${API_BASE_URL}/author/guest`);
       const apiUser = await response.json();
-      console.log("Usuario invitado obtenido: ",apiUser);
+      console.log("Usuario invitado obtenido: ", apiUser);
       return convertApiUserToAppUser(apiUser);
     } catch (error) {
       console.error('Error al obtener usuario invitado:', error);
@@ -44,25 +44,35 @@ export const authService = {
     try {
       const response = await fetch(`${API_BASE_URL}/author/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: credentials.username,
           password: credentials.password
         }),
       });
 
+      //console.log("Respuesta de login:", response.status, response);
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Error en el login');
+        return {
+          success: false,
+          message: errorData.message,
+          tipo: errorData.tipo || 'general',
+        };
       }
 
       const apiUser = await response.json();
-      return convertApiUserToAppUser(apiUser);
+      return {
+        success: true,
+        user: convertApiUserToAppUser(apiUser),
+      };
     } catch (error) {
       console.error('Error en login:', error);
-      throw error;
+      return {
+        success: false,
+        message: 'Error de conexión',
+        tipo: 'network',
+      };
     }
   },
 
@@ -85,7 +95,6 @@ export const authService = {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Error al registrar usuario');
       }
-
       const result = await response.json();
       return result;
     } catch (error) {

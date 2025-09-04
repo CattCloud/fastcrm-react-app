@@ -30,7 +30,7 @@ export const useTemplates = (user) => {
         fetchedTemplates = Array.from(uniqueTemplates.values());
         */
       }
-      console.log("Plantillas obtenidas:", fetchedTemplates);
+      //console.log("Plantillas obtenidas:", fetchedTemplates);
       setTemplates(fetchedTemplates);
     } catch (err) {
       console.error('Error al cargar plantillas:', err);
