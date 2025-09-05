@@ -6,6 +6,7 @@ function convertContact(rawContact) {
     name: rawContact.name,
     phone: rawContact.whatsapp,
     authorId: rawContact.authorId,
+    authorName: rawContact.authorName,
     createdAt: new Date(rawContact.createdAt).toLocaleDateString('es-PE', {
       year: 'numeric',
       month: 'short',
@@ -39,14 +40,15 @@ export async function createContact(data) {
   }
 }
 
-export async function getContacts() {
+export async function getContacts({ orderBy = 'createdAt', order = 'desc' } = {}) {
   try {
-    const response = await fetch(`${API_BASE_URL}/contact`);
+    const query = new URLSearchParams({ orderBy, order }).toString();
+    const response = await fetch(`${API_BASE_URL}/contact?${query}`);
     if (!response.ok) {
       throw new Error('Error al obtener contactos');
     }
     const result = await response.json();
-    return result.map(convertContact);
+    return result.contacts.map(convertContact);
   } catch (err) {
     console.error('getContacts error:', err);
     throw new Error(err.message || 'Error inesperado al obtener contactos');

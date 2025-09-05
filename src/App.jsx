@@ -1,17 +1,19 @@
-// App.jsx
+// App.jsx - Actualizado con funcionalidad de contactos
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { Templates } from './pages/Templates';
+import { Contacts } from './pages/Contacts';
 import { TemplateForm } from './components/templates/TemplateForm';
+import { ContactForm } from './components/contacts/ContactForm';
 import { ConfirmDialog } from './components/ui/ConfirmDialog';
 import { SplashScreen } from './components/ui/SplashScreen';
+import { LoadingError } from './components/ui/LoadingError';
 import { useAuth } from './hooks/useAuth';
 import { useTemplates } from './hooks/useTemplates';
-import { LoadingError } from './components/ui/LoadingError';
+import { useContacts } from './hooks/useContacts';
 import { notify } from './utils/notify';
 import { Toaster } from 'sonner';
-
 
 function App() {
   // Estados de autenticación y carga
@@ -36,20 +38,28 @@ function App() {
     refreshTemplates
   } = useTemplates(user);
 
+  const {
+    contacts,
+    loading: contactsLoading,
+    error: contactsError,
+    createContact,
+    deleteContact: removeContact,
+    refreshContacts,
+    canCreateContact,
+    canDeleteContact
+  } = useContacts(user);
+
   // Estados de UI
   const [showSplash, setShowSplash] = useState(true);
   const [currentPage, setCurrentPage] = useState('templates');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
-  const [deleteDialog, setDeleteDialog] = useState({ open: false, template: null });
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, item: null, type: null });
   const [actionLoading, setActionLoading] = useState(false);
 
-
-  //localStorage.clear();
   // Manejar splash screen
   useEffect(() => {
     if (!authLoading) {
-      // Mostrar splash por al menos 2 segundos
       const timer = setTimeout(() => {
         setShowSplash(false);
       }, 2000);
@@ -57,23 +67,20 @@ function App() {
     }
   }, [authLoading]);
 
-  // Handlers para plantillas
+  // === HANDLERS PARA PLANTILLAS ===
   const handleCreateTemplate = async (templateData) => {
     try {
       setActionLoading(true);
-
       const templateToCreate = {
         ...templateData,
-        author: user.id // Usar el ID del usuario actual
+        author: user.id
       };
-
       await createTemplate(templateToCreate);
       setCurrentPage('templates');
       notify.success('Plantilla creada exitosamente');
     } catch (error) {
       notify.error('Error al crear la plantilla');
       console.error('Error al crear plantilla:', error);
-      // Aquí puedes mostrar un toast o modal de error
     } finally {
       setActionLoading(false);
     }
@@ -82,7 +89,6 @@ function App() {
   const handleEditTemplate = async (templateData) => {
     try {
       setActionLoading(true);
-
       await updateTemplate(templateData._id, templateData);
       setEditingTemplate(null);
       setCurrentPage('templates');
@@ -96,27 +102,10 @@ function App() {
   };
 
   const handleDeleteTemplate = (template) => {
-    // Verificar permisos antes de mostrar el diálogo
     if (canModifyTemplate(template)) {
-      setDeleteDialog({ open: true, template });
+      setDeleteDialog({ open: true, item: template, type: 'template' });
     } else {
       notify.info('No tienes permisos para eliminar esta plantilla');
-    }
-  };
-
-  const confirmDelete = async () => {
-    try {
-      setActionLoading(true);
-
-      await deleteTemplate(deleteDialog.template._id);
-      setDeleteDialog({ open: false, template: null });
-      notify.success('Plantilla eliminada exitosamente');
-
-    } catch (error) {
-      notify.error('Error al eliminar la plantilla');
-      console.error('Error al eliminar plantilla:', error);
-    } finally {
-      setActionLoading(false);
     }
   };
 
@@ -129,15 +118,73 @@ function App() {
     }
   };
 
-  // Handler para login con manejo de errores
+  // === HANDLERS PARA CONTACTOS ===
+  const handleCreateContact = async (contactData) => {
+    try {
+      setActionLoading(true);
+      const result = await createContact(contactData);
+      
+      if (result.success) {
+        setCurrentPage('contacts');
+        notify.success('Contacto creado exitosamente');
+      } else {
+        if (result.type === 'duplicate') {
+          notify.error('Ya existe un contacto con ese número de WhatsApp');
+        } else {
+          notify.error(result.error || 'Error al crear el contacto');
+        }
+      }
+    } catch (error) {
+      notify.error('Error al crear el contacto');
+      console.error('Error al crear contacto:', error);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteContact = (contact) => {
+    if (canDeleteContact(contact)) {
+      setDeleteDialog({ open: true, item: contact, type: 'contact' });
+    } else {
+      notify.info('No tienes permisos para eliminar este contacto');
+    }
+  };
+
+  // === CONFIRMACIÓN DE ELIMINACIÓN ===
+  const confirmDelete = async () => {
+    try {
+      setActionLoading(true);
+      
+      if (deleteDialog.type === 'template') {
+        await deleteTemplate(deleteDialog.item._id);
+        notify.success('Plantilla eliminada exitosamente');
+      } else if (deleteDialog.type === 'contact') {
+        const result = await removeContact(deleteDialog.item.id);
+        if (result.success) {
+          notify.success('Contacto eliminado exitosamente');
+        } else {
+          notify.error(result.error || 'Error al eliminar el contacto');
+        }
+      }
+
+      setDeleteDialog({ open: false, item: null, type: null });
+    } catch (error) {
+      const itemType = deleteDialog.type === 'template' ? 'plantilla' : 'contacto';
+      notify.error(`Error al eliminar ${itemType}`);
+      console.error(`Error al eliminar ${itemType}:`, error);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // === HANDLERS DE AUTENTICACIÓN ===
   const handleLogin = async (credentials) => {
     try {
       const result = await login(credentials);
-      console.log('Resultado de login:', result);
-
+      
       if (result.success) {
-        await refreshTemplates();
-        notify.success("Bienvenido " + result.user.name + "!");
+        await Promise.all([refreshTemplates(), refreshContacts()]);
+        notify.success(`Bienvenido ${result.user.name}!`);
         return result;
       } else {
         switch (result.tipo) {
@@ -159,14 +206,13 @@ function App() {
     }
   };
 
-  // Handler para register
   const handleRegister = async (userData) => {
     try {
       const result = await register(userData);
-
+      
       if (result.success) {
-        await refreshTemplates();
-        notify.success('Registro exitoso:', result.user.name);
+        await Promise.all([refreshTemplates(), refreshContacts()]);
+        notify.success(`Registro exitoso: ${result.user.name}`);
         return result;
       } else {
         return result;
@@ -178,12 +224,11 @@ function App() {
     }
   };
 
-  // Handler para logout
   const handleLogout = async () => {
     try {
       await logout();
-      setCurrentPage('templates'); // Volver a templates
-      setEditingTemplate(null); // Limpiar edición
+      setCurrentPage('templates');
+      setEditingTemplate(null);
       notify.success('Logout exitoso');
     } catch (error) {
       console.error('Error en logout:', error);
@@ -191,18 +236,19 @@ function App() {
     }
   };
 
-  // Función para reintentar conexión
-  const handleRetry = () => {
-    window.location.reload(); // Recargar la aplicación
-  };
-
-  // Renderizado de páginas
+  // === RENDERIZADO DE PÁGINAS ===
   const renderCurrentPage = () => {
-    if (templatesLoading && !templates.length) {
+    // Loading state general
+    const isInitialLoading = (templatesLoading && !templates.length) || 
+                            (contactsLoading && !contacts.length && currentPage === 'contacts');
+
+    if (isInitialLoading) {
       return (
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00A4EF]"></div>
-          <span className="ml-3 text-[#546E7A]">Cargando plantillas...</span>
+          <span className="ml-3 text-[#546E7A]">
+            {currentPage === 'contacts' ? 'Cargando contactos...' : 'Cargando plantillas...'}
+          </span>
         </div>
       );
     }
@@ -217,6 +263,7 @@ function App() {
             user={user}
           />
         );
+        
       case 'edit':
         return (
           <TemplateForm
@@ -230,7 +277,32 @@ function App() {
             user={user}
           />
         );
-      default:
+
+      case 'contacts':
+        return (
+          <Contacts
+            user={user}
+            contacts={contacts}
+            onCreateContact={() => setCurrentPage('create-contact')}
+            onDelete={handleDeleteContact}
+            loading={contactsLoading}
+            error={contactsError}
+            onRefresh={refreshContacts}
+            canCreateContact={canCreateContact()}
+          />
+        );
+
+      case 'create-contact':
+        return (
+          <ContactForm
+            onSave={handleCreateContact}
+            onCancel={() => setCurrentPage('contacts')}
+            loading={actionLoading}
+            user={user}
+          />
+        );
+
+      default: // templates
         return (
           <Templates
             user={user}
@@ -247,6 +319,11 @@ function App() {
     }
   };
 
+  // Función para reintentar conexión
+  const handleRetry = () => {
+    window.location.reload();
+  };
+
   // Mostrar splash screen mientras carga
   if (showSplash || authLoading) {
     return <SplashScreen onComplete={() => setShowSplash(false)} />;
@@ -256,6 +333,20 @@ function App() {
   if (authError && !user) {
     return <LoadingError error={authError} onRetry={handleRetry} />;
   }
+
+  // Mensaje del diálogo de confirmación
+  const getDeleteMessage = () => {
+    if (deleteDialog.type === 'template') {
+      return `¿Estás seguro de que deseas eliminar la plantilla "${deleteDialog.item?.type}"? Esta acción no se puede deshacer.`;
+    } else if (deleteDialog.type === 'contact') {
+      return `¿Estás seguro de que deseas eliminar el contacto "${deleteDialog.item?.name}"? Esta acción no se puede deshacer.`;
+    }
+    return '';
+  };
+
+  const getDeleteTitle = () => {
+    return deleteDialog.type === 'template' ? 'Eliminar Plantilla' : 'Eliminar Contacto';
+  };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -292,10 +383,10 @@ function App() {
       {/* Confirm Dialog */}
       <ConfirmDialog
         isOpen={deleteDialog.open}
-        onClose={() => setDeleteDialog({ open: false, template: null })}
+        onClose={() => setDeleteDialog({ open: false, item: null, type: null })}
         onConfirm={confirmDelete}
-        title="Eliminar Plantilla"
-        message={`¿Estás seguro de que deseas eliminar la plantilla "${deleteDialog.template?.type}"? Esta acción no se puede deshacer.`}
+        title={getDeleteTitle()}
+        message={getDeleteMessage()}
         type="danger"
         loading={actionLoading}
       />
@@ -309,7 +400,6 @@ function App() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
