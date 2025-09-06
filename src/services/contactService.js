@@ -1,6 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_APP_API_URL;
 
-function convertContact(rawContact) {
+export function convertContact(rawContact) {
     return {
         id: rawContact.id,
         name: rawContact.name,

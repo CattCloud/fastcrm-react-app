@@ -1,11 +1,15 @@
 const API_BASE_URL = import.meta.env.VITE_APP_API_URL;
+import { convertContact } from './contactService.js';
+
 
 function convertCompany(rawCompany) {
   return {
     id: rawCompany._id || rawCompany.id,
     name: rawCompany.name,
     ruc: rawCompany.ruc,
-    contacts: rawCompany.contacts || [],
+    contacts: Array.isArray(rawCompany.contacts)
+      ? rawCompany.contacts.map(convertContact)
+      : [],
     createdAt: new Date(rawCompany.createdAt).toLocaleDateString('es-PE', {
       year: 'numeric',
       month: 'short',
@@ -13,6 +17,7 @@ function convertCompany(rawCompany) {
     })
   };
 }
+
 
 export async function createCompany(data) {
   try {

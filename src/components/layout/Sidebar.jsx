@@ -1,12 +1,12 @@
 // src/components/layout/Sidebar.jsx
-import { X, FileText, Users, Plus, UserPlus } from 'lucide-react';
+import { X, FileText, Users, Plus, UserPlus,Building } from 'lucide-react';
 
-export const Sidebar = ({ 
-  isOpen, 
-  onClose, 
-  currentPage, 
-  onPageChange, 
-  user 
+export const Sidebar = ({
+  isOpen,
+  onClose,
+  currentPage,
+  onPageChange,
+  user
 }) => {
   // Elementos del menú según el tipo de usuario
   const getMenuItems = () => {
@@ -15,7 +15,8 @@ export const Sidebar = ({
         id: 'templates',
         label: 'Plantillas',
         icon: FileText
-      }
+      },
+
     ];
 
     // Solo mostrar contactos a usuarios logueados (no invitados)
@@ -24,6 +25,10 @@ export const Sidebar = ({
         id: 'contacts',
         label: 'Contactos',
         icon: Users
+      }, {
+        id: 'companies',
+        label: 'Empresas',
+        icon: Building 
       });
     }
 
@@ -73,7 +78,7 @@ export const Sidebar = ({
     <>
       {/* Overlay para móvil */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={onClose}
         />
@@ -87,7 +92,7 @@ export const Sidebar = ({
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:static lg:z-auto
       `}>
-        
+
         {/* Header del sidebar */}
         <div className="flex items-center justify-between p-4 border-b border-[#E3F2FD] lg:hidden">
           <div className="flex items-center gap-3">
@@ -107,13 +112,12 @@ export const Sidebar = ({
         {/* Información del usuario */}
         <div className="p-4 border-b border-[#E3F2FD]">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-              user?.type === 'admin' 
-                ? 'bg-gradient-to-r from-purple-400 to-purple-600' 
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${user?.type === 'admin'
+                ? 'bg-gradient-to-r from-purple-400 to-purple-600'
                 : user?.type === 'usuario'
-                ? 'bg-gradient-to-r from-[#00A4EF] to-[#0D47A1]'
-                : 'bg-gradient-to-r from-gray-400 to-gray-600'
-            }`}>
+                  ? 'bg-gradient-to-r from-[#00A4EF] to-[#0D47A1]'
+                  : 'bg-gradient-to-r from-gray-400 to-gray-600'
+              }`}>
               <span className="text-white font-medium text-sm">
                 {user?.name.charAt(0).toUpperCase()}
               </span>
@@ -122,11 +126,10 @@ export const Sidebar = ({
               <p className="font-medium text-[#263238] truncate">
                 {user?.name || 'Usuario'}
               </p>
-              <p className={`text-xs capitalize ${
-                user?.type === 'admin' ? 'text-purple-600' :
-                user?.type === 'usuario' ? 'text-[#00A4EF]' : 
-                'text-[#90A4AE]'
-              }`}>
+              <p className={`text-xs capitalize ${user?.type === 'admin' ? 'text-purple-600' :
+                  user?.type === 'usuario' ? 'text-[#00A4EF]' :
+                    'text-[#90A4AE]'
+                }`}>
                 {user?.type || 'invitado'}
               </p>
             </div>
@@ -142,7 +145,7 @@ export const Sidebar = ({
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentPage === item.id;
-              
+
               return (
                 <li key={item.id}>
                   <button
@@ -150,8 +153,8 @@ export const Sidebar = ({
                     className={`
                       w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium
                       transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]
-                      ${isActive 
-                        ? 'bg-[#E3F2FD] text-[#00A4EF] shadow-[0_2px_8px_rgba(0,164,239,0.08)]' 
+                      ${isActive
+                        ? 'bg-[#E3F2FD] text-[#00A4EF] shadow-[0_2px_8px_rgba(0,164,239,0.08)]'
                         : 'text-[#546E7A] hover:bg-[#F8FAFC] hover:text-[#263238]'
                       }
                     `}
@@ -174,7 +177,7 @@ export const Sidebar = ({
             <div className="space-y-2">
               {quickActions.map((action) => {
                 const Icon = action.icon;
-                
+
                 return (
                   <button
                     key={action.id}

@@ -14,6 +14,8 @@ import { useTemplates } from './hooks/useTemplates';
 import { useContacts } from './hooks/useContacts';
 import { notify } from './utils/notify';
 import { Toaster } from 'sonner';
+import { Companies } from './pages/Companies';
+import { useCompany } from './hooks/useCompany';
 
 function App() {
   // Estados de autenticación y carga
@@ -48,6 +50,15 @@ function App() {
     canCreateContact,
     canDeleteContact
   } = useContacts(user);
+
+  const {
+    companies,
+    loading: companiesLoading,
+    error: companiesError,
+    fetchCompanies: refreshCompanies,
+    deleteCompany: handleDeleteCompany,
+  } = useCompany();
+
 
   // Estados de UI
   const [showSplash, setShowSplash] = useState(true);
@@ -123,7 +134,7 @@ function App() {
     try {
       setActionLoading(true);
       const result = await createContact(contactData);
-      
+
       if (result.success) {
         setCurrentPage('contacts');
         notify.success('Contacto creado exitosamente');
@@ -154,7 +165,7 @@ function App() {
   const confirmDelete = async () => {
     try {
       setActionLoading(true);
-      
+
       if (deleteDialog.type === 'template') {
         await deleteTemplate(deleteDialog.item._id);
         notify.success('Plantilla eliminada exitosamente');
@@ -181,7 +192,7 @@ function App() {
   const handleLogin = async (credentials) => {
     try {
       const result = await login(credentials);
-      
+
       if (result.success) {
         await Promise.all([refreshTemplates(), refreshContacts()]);
         notify.success(`Bienvenido ${result.user.name}!`);
@@ -209,7 +220,7 @@ function App() {
   const handleRegister = async (userData) => {
     try {
       const result = await register(userData);
-      
+
       if (result.success) {
         await Promise.all([refreshTemplates(), refreshContacts()]);
         notify.success(`Registro exitoso: ${result.user.name}`);
@@ -239,8 +250,8 @@ function App() {
   // === RENDERIZADO DE PÁGINAS ===
   const renderCurrentPage = () => {
     // Loading state general
-    const isInitialLoading = (templatesLoading && !templates.length) || 
-                            (contactsLoading && !contacts.length && currentPage === 'contacts');
+    const isInitialLoading = (templatesLoading && !templates.length) ||
+      (contactsLoading && !contacts.length && currentPage === 'contacts');
 
     if (isInitialLoading) {
       return (
@@ -263,7 +274,7 @@ function App() {
             user={user}
           />
         );
-        
+
       case 'edit':
         return (
           <TemplateForm
@@ -299,6 +310,18 @@ function App() {
             onCancel={() => setCurrentPage('contacts')}
             loading={actionLoading}
             user={user}
+          />
+        );
+      case 'companies':
+        return (
+          <Companies
+            user={user}
+            companies={companies}
+            onCreateCompany={() => setCurrentPage('create-company')}
+            onDelete={handleDeleteCompany}
+            loading={companiesLoading}
+            error={companiesError}
+            onRefresh={refreshCompanies}           
           />
         );
 
