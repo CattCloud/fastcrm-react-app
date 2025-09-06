@@ -2,26 +2,32 @@
 import { useState } from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { X, User, Phone, Loader2 } from 'lucide-react';
+import { X, User, Phone, Loader2,Building } from 'lucide-react';
+import { CompanyInput } from '../ui/CompanyInput';
+import { useCompany } from '../../hooks/useCompany';
 
 export const ContactForm = ({ onSave, onCancel, loading = false, user }) => {
   const [formData, setFormData] = useState({
     name: '',
-    whatsapp: ''
+    whatsapp: '',
+    company: '',
+    ruc: ''
+
   });
   const [errors, setErrors] = useState({});
+  const { companies, createCompany } = useCompany(); // ← Asegúrate de incluir createCompany
+
+  const companySuggestions = companies.map(c => c.name);
 
   const validateForm = () => {
     const newErrors = {};
 
-    // Validar nombre
     if (!formData.name.trim()) {
       newErrors.name = 'El nombre es requerido';
     } else if (formData.name.trim().length < 2) {
       newErrors.name = 'El nombre debe tener al menos 2 caracteres';
     }
 
-    // Validar WhatsApp
     const phoneRegex = /^\+51\d{9}$/;
     if (!formData.whatsapp.trim()) {
       newErrors.whatsapp = 'El número de WhatsApp es requerido';
@@ -29,13 +35,26 @@ export const ContactForm = ({ onSave, onCancel, loading = false, user }) => {
       newErrors.whatsapp = 'Formato de número inválido (ej: +51987654321)';
     }
 
+    if (formData.company.trim()) {
+      const matchedCompany = companies.find(
+        c => c.name.toLowerCase() === formData.company.trim().toLowerCase()
+      );
+
+      if (!matchedCompany) {
+        if (!formData.ruc.trim()) {
+          newErrors.ruc = 'El RUC es requerido';
+        } else if (!/^\d{11}$/.test(formData.ruc.trim())) {
+          newErrors.ruc = 'El RUC debe tener exactamente 11 dígitos';
+        }
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
 
     const contactData = {
@@ -44,17 +63,51 @@ export const ContactForm = ({ onSave, onCancel, loading = false, user }) => {
       authorId: user.id
     };
 
+    const companyName = formData.company.trim();
+    if (companyName) {
+      const matchedCompany = companies.find(
+        c => c.name.toLowerCase() === companyName.toLowerCase()
+      );
+
+      if (matchedCompany) {
+        contactData.companyId = matchedCompany.id;
+      } else {
+        const result = await createCompany({
+          name: companyName,
+          ruc: formData.ruc.trim()
+        });
+
+        if (result.success) {
+          contactData.companyId = result.company.id;
+        } else {
+          console.error('Error al crear empresa:', result.error);
+          return;
+        }
+      }
+    }
+
     onSave(contactData);
   };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Limpiar error del campo al empezar a escribir
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+
+      if (field === 'company') {
+        const match = companies.find(
+          c => c.name.toLowerCase() === value.trim().toLowerCase()
+        );
+        updated.ruc = match ? match.ruc : '';
+      }
+
+      return updated;
+    });
+
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
+
 
   return (
     <div className="w-full mx-auto">
@@ -93,16 +146,16 @@ export const ContactForm = ({ onSave, onCancel, loading = false, user }) => {
                   w-full px-4 py-2 pl-10 border rounded-md text-[#263238]
                   transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]
                   focus:outline-none focus:ring-3 focus:ring-[rgba(0,164,239,0.1)]
-                  ${errors.name 
-                    ? 'border-[#F44336] bg-red-50' 
+                  ${errors.name
+                    ? 'border-[#F44336] bg-red-50'
                     : 'border-[#E3F2FD] focus:border-[#00A4EF] bg-white'
                   }
                 `}
                 placeholder="Ej: Juan Pérez García"
                 disabled={loading}
               />
-              <User 
-                className={`absolute left-3 top-2.5 w-4 h-4 ${errors.name ? 'text-[#F44336]' : 'text-[#90A4AE]'}`} 
+              <User
+                className={`absolute left-3 top-2.5 w-4 h-4 ${errors.name ? 'text-[#F44336]' : 'text-[#90A4AE]'}`}
               />
             </div>
             {errors.name && (
@@ -124,25 +177,71 @@ export const ContactForm = ({ onSave, onCancel, loading = false, user }) => {
                   w-full px-4 py-2 pl-10 border rounded-md text-[#263238]
                   transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]
                   focus:outline-none focus:ring-3 focus:ring-[rgba(0,164,239,0.1)]
-                  ${errors.whatsapp 
-                    ? 'border-[#F44336] bg-red-50' 
+                  ${errors.whatsapp
+                    ? 'border-[#F44336] bg-red-50'
                     : 'border-[#E3F2FD] focus:border-[#00A4EF] bg-white'
                   }
                 `}
                 placeholder="Ej: +51987654321"
                 disabled={loading}
               />
-              <Phone 
-                className={`absolute left-3 top-2.5 w-4 h-4 ${errors.whatsapp ? 'text-[#F44336]' : 'text-[#90A4AE]'}`} 
+              <Phone
+                className={`absolute left-3 top-2.5 w-4 h-4 ${errors.whatsapp ? 'text-[#F44336]' : 'text-[#90A4AE]'}`}
               />
             </div>
             {errors.whatsapp && (
               <p className="mt-1 text-sm text-[#F44336]">{errors.whatsapp}</p>
             )}
             <p className="mt-1 text-xs text-[#90A4AE]">
-              Incluye el código de país (ej: +51 para Perú)
+              Incluye el código de país +51
             </p>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#263238] mb-2">
+              Empresa (opcional)
+            </label>
+            <CompanyInput
+              value={formData.company}
+              onChange={(value) => handleInputChange('company', value)}
+              suggestions={companySuggestions}
+              disabled={loading}
+            />
+          </div>
+          
+
+          {!companies.some(c => c.name.toLowerCase() === formData.company.trim().toLowerCase()) && (
+            <div>
+              <label className="block text-sm font-medium text-[#263238] mb-2">
+                RUC de la empresa *
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={formData.ruc}
+                  onChange={(e) => handleInputChange('ruc', e.target.value)}
+                  className={`
+                  w-full px-4 py-2 pl-10 border rounded-md text-[#263238]
+                  transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]
+                  focus:outline-none focus:ring-3 focus:ring-[rgba(0,164,239,0.1)]
+                  ${errors.ruc
+                      ? 'border-[#F44336] bg-red-50'
+                      : 'border-[#E3F2FD] focus:border-[#00A4EF] bg-white'
+                    }
+                `}
+                  placeholder="Ej: 20512345678"
+                  disabled={loading}
+                />
+                <Building
+                className={`absolute left-3 top-2.5 w-4 h-4 ${errors.whatsapp ? 'text-[#F44336]' : 'text-[#90A4AE]'}`}
+              />
+              </div>
+              {errors.ruc && (
+                <p className="mt-1 text-sm text-[#F44336]">{errors.ruc}</p>
+              )}
+            </div>
+          )}
+
 
           {/* Información del autor */}
           <div className="bg-[#F8FAFC] border border-[#E3F2FD] rounded-md p-3">
@@ -182,7 +281,7 @@ export const ContactForm = ({ onSave, onCancel, loading = false, user }) => {
         {/* Nota sobre duplicados */}
         <div className="mt-4 p-3 bg-[#E3F2FD] border border-[#BBDEFB] rounded-md">
           <p className="text-xs text-[#0D47A1]">
-            <span className="font-medium">Nota:</span> No se permiten números de WhatsApp duplicados 
+            <span className="font-medium">Nota:</span> No se permiten números de WhatsApp duplicados
             para el mismo usuario.
           </p>
         </div>
