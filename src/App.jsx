@@ -15,6 +15,7 @@ import { useContacts } from './hooks/useContacts';
 import { notify } from './utils/notify';
 import { Toaster } from 'sonner';
 import { Companies } from './pages/Companies';
+import { ContactLogs } from './pages/ContactsLog';
 
 function App() {
   // Estados de autenticación y carga
@@ -310,6 +311,13 @@ function App() {
         return (
           <Companies
             user={user}          />
+        );
+
+      case 'contact-logs':
+        return (
+          <ContactLogs
+            user={user}
+          />
         );
 
       default: // templates

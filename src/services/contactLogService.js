@@ -1,6 +1,38 @@
 const API_BASE_URL = import.meta.env.VITE_APP_API_URL;
 const BASE_URL = `${API_BASE_URL}/contactlog`;
 
+export function convertContactLog(rawLog) {
+  const contact = rawLog.contact || {};
+  const template = rawLog.template || {};
+  return {
+    id: rawLog.id,
+    contactId: rawLog.contactId,
+    templateId: rawLog.templateId,
+    createdAt: new Date(rawLog.createdAt).toLocaleDateString('es-PE', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }),
+
+    // Datos del contacto
+    contactName: contact.name || 'Sin nombre',
+    contactPhone: contact.whatsapp || '',
+    authorId: contact.authorId || null,
+
+    // Datos de la plantilla
+    templateType: template.type || 'sin tipo',
+    templateContent: template.content || '',
+    templateLabels: Array.isArray(template.labels) ? template.labels : [],
+    templateCreatedAt: template.createdAt
+      ? new Date(template.createdAt).toLocaleDateString('es-PE', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        })
+      : null,
+  };
+}
+
 
 export async function createContactLog(payload) {
   try {
@@ -34,8 +66,8 @@ export async function getAllContactLogs() {
       throw error;
     }
 
-    const logs = await res.json();
-    return logs;
+    const rawLogs = await res.json();
+    return rawLogs.map(convertContactLog);
   } catch (error) {
     console.error('Error getAllContactLogs:', error);
     throw error;
@@ -50,8 +82,8 @@ export async function getContactLogsByAuthorId(authorId) {
       throw error;
     }
 
-    const logs = await res.json();
-    return logs;
+    const rawLogs = await res.json();
+    return rawLogs.map(convertContactLog);
   } catch (error) {
     console.error('Error getContactLogsByAuthorId:', error);
     throw error;

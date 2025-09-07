@@ -1,5 +1,5 @@
 // src/components/layout/Sidebar.jsx
-import { X, FileText, Users, Plus, UserPlus,Building } from 'lucide-react';
+import { X, FileText, Users, Plus, UserPlus,Building ,History} from 'lucide-react';
 
 export const Sidebar = ({
   isOpen,
@@ -29,7 +29,15 @@ export const Sidebar = ({
         id: 'companies',
         label: 'Empresas',
         icon: Building 
-      });
+      },
+      {
+        id: 'contact-logs',
+        label: 'Historial de Contactos',
+        icon: History 
+      }
+    
+    );
+
     }
 
     return baseItems;
