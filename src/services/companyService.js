@@ -57,6 +57,21 @@ export async function getCompanies() {
   }
 }
 
+export async function getCompaniesByAuthor(authorId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/company/author/${authorId}`);
+    if (!response.ok) {
+      throw new Error('Error al obtener empresas del autor');
+    }
+
+    const result = await response.json();
+    return result.companies.map(convertCompany);
+  } catch (err) {
+    console.error('getCompaniesByAuthor error:', err);
+    throw new Error(err.message || 'Error inesperado al obtener empresas del autor');
+  }
+}
+
 export async function findCompanyById(id) {
   try {
     const response = await fetch(`${API_BASE_URL}/company/${id}`);

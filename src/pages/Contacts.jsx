@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { ContactCard } from '../components/contacts/ContactCard';
 import { Button } from '../components/ui/Button';
 import { LoadingError } from '../components/ui/LoadingError';
@@ -12,7 +12,7 @@ import {
   AlertCircle,
   UserPlus
 } from 'lucide-react';
-import { getContacts } from '../services/contactService'; // Asegúrate de que esta función acepte { orderBy, order }
+import { useContacts } from '../hooks/useContacts';
 
 export const Contacts = ({
   user,
@@ -20,29 +20,20 @@ export const Contacts = ({
   onDelete,
   canCreateContact = true
 }) => {
+  // Usar el hook useContacts en lugar de manejar el estado localmente
+  const {
+    contacts,
+    loading,
+    error,
+    refreshContacts,
+    canCreateContact: hookCanCreateContact,
+    canDeleteContact
+  } = useContacts(user);
+
+  // Estados locales para UI
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState('desc');
   const [showFilters, setShowFilters] = useState(false);
-  const [contacts, setContacts] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const fetchContacts = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getContacts({ orderBy: 'createdAt', order: sortOrder });
-      setContacts(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchContacts();
-  }, [sortOrder]);
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
@@ -56,25 +47,48 @@ export const Contacts = ({
     setSearchTerm('');
   };
 
-  const filteredContacts = useMemo(() => {
-    if (!searchTerm.trim()) return contacts;
-    const term = searchTerm.toLowerCase();
-    return contacts.filter(contact =>
-      contact.name.toLowerCase().includes(term) ||
-      contact.phone.includes(term)
-    );
-  }, [contacts, searchTerm]);
+  // Filtrar y ordenar contactos
+  const filteredAndSortedContacts = useMemo(() => {
+    let filtered = contacts;
 
+    // Aplicar filtro de búsqueda
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = contacts.filter(contact =>
+        contact.name.toLowerCase().includes(term) ||
+        contact.phone.includes(term)
+      );
+    }
+
+    // Aplicar ordenamiento
+    const sorted = [...filtered].sort((a, b) => {
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
+      
+      if (sortOrder === 'desc') {
+        return dateB - dateA; // Más recientes primero
+      } else {
+        return dateA - dateB; // Más antiguos primero
+      }
+    });
+
+    return sorted;
+  }, [contacts, searchTerm, sortOrder]);
+
+  // Manejar errores críticos
   if (error && !contacts.length) {
     return (
       <LoadingError
         error={error}
-        onRetry={fetchContacts}
+        onRetry={refreshContacts}
         title="Error al cargar contactos"
         description="No se pudieron cargar los contactos. Por favor, inténtalo de nuevo."
       />
     );
   }
+
+  // Determinar si el usuario puede crear contactos
+  const userCanCreateContact = canCreateContact && hookCanCreateContact();
 
 
   return (
@@ -96,7 +110,7 @@ export const Contacts = ({
         </div>
 
         {/* Botón crear contacto */}
-        {canCreateContact && user?.type !== 'invitado' && (
+        {userCanCreateContact && (
           <Button 
             onClick={onCreateContact}
             className="flex items-center gap-2"
@@ -120,6 +134,7 @@ export const Contacts = ({
               value={searchTerm}
               onChange={handleSearchChange}
               className="w-full pl-10 pr-4 py-2 border border-[#E3F2FD] rounded-md focus:outline-none focus:ring-3 focus:ring-[rgba(0,164,239,0.1)] focus:border-[#00A4EF] text-[#263238]"
+              disabled={loading}
             />
             {searchTerm && (
               <button
@@ -138,6 +153,7 @@ export const Contacts = ({
               size="sm"
               onClick={toggleSortOrder}
               className="flex items-center gap-2"
+              disabled={loading}
             >
               {sortOrder === 'desc' ? <SortDesc size={16} /> : <SortAsc size={16} />}
               {sortOrder === 'desc' ? 'Más recientes' : 'Más antiguos'}
@@ -148,6 +164,7 @@ export const Contacts = ({
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center gap-2"
+              disabled={loading}
             >
               <Filter size={16} />
               Filtros
@@ -167,6 +184,7 @@ export const Contacts = ({
                     ? 'bg-[#00A4EF] text-white' 
                     : 'bg-[#F8FAFC] text-[#546E7A] hover:bg-[#E3F2FD]'
                 }`}
+                disabled={loading}
               >
                 Fecha (nuevo → antiguo)
               </button>
@@ -177,6 +195,7 @@ export const Contacts = ({
                     ? 'bg-[#00A4EF] text-white' 
                     : 'bg-[#F8FAFC] text-[#546E7A] hover:bg-[#E3F2FD]'
                 }`}
+                disabled={loading}
               >
                 Fecha (antiguo → nuevo)
               </button>
@@ -189,9 +208,9 @@ export const Contacts = ({
       {searchTerm && (
         <div className="bg-[#E3F2FD] border border-[#BBDEFB] rounded-md p-3">
           <p className="text-sm text-[#0D47A1]">
-            {filteredContacts.length === 0 
+            {filteredAndSortedContacts.length === 0 
               ? `No se encontraron contactos que coincidan con "${searchTerm}"`
-              : `Mostrando ${filteredContacts.length} contacto${filteredContacts.length !== 1 ? 's' : ''} que coincide${filteredContacts.length === 1 ? '' : 'n'} con "${searchTerm}"`
+              : `Mostrando ${filteredAndSortedContacts.length} contacto${filteredAndSortedContacts.length !== 1 ? 's' : ''} que coincide${filteredAndSortedContacts.length === 1 ? '' : 'n'} con "${searchTerm}"`
             }
           </p>
         </div>
@@ -206,29 +225,34 @@ export const Contacts = ({
             <span className="text-[#546E7A]">Cargando contactos...</span>
           </div>
         </div>
-      ) : filteredContacts.length === 0 && contacts.length === 0 ? (
+      ) : filteredAndSortedContacts.length === 0 && contacts.length === 0 ? (
         // Estado vacío inicial
         <div className="text-center py-12">
           <div className="w-16 h-16 bg-[#E3F2FD] rounded-full flex items-center justify-center mx-auto mb-4">
             <UserPlus className="w-8 h-8 text-[#00A4EF]" />
           </div>
           <h3 className="text-lg font-medium text-[#263238] mb-2">
-            No hay contactos registrados
+            {user?.type === 'invitado' 
+              ? 'Acceso limitado'
+              : 'No hay contactos registrados'
+            }
           </h3>
           <p className="text-[#546E7A] mb-4 max-w-md mx-auto">
             {user?.type === 'invitado' 
-              ? 'Los usuarios invitados no pueden crear contactos. Inicia sesión para acceder a esta funcionalidad.'
-              : 'Comienza creando tu primer contacto para mantener organizados los datos de tus clientes.'
+              ? 'Los usuarios invitados no pueden ver contactos. Inicia sesión para acceder a esta funcionalidad.'
+              : user?.type === 'admin'
+                ? 'No hay contactos en el sistema. Los usuarios pueden crear contactos desde sus cuentas.'
+                : 'Comienza creando tu primer contacto para mantener organizados los datos de tus clientes.'
             }
           </p>
-          {canCreateContact && user?.type !== 'invitado' && (
+          {userCanCreateContact && (
             <Button onClick={onCreateContact} className="flex items-center gap-2">
               <Plus size={18} />
               Crear mi primer contacto
             </Button>
           )}
         </div>
-      ) : filteredContacts.length === 0 ? (
+      ) : filteredAndSortedContacts.length === 0 ? (
         // Sin resultados de búsqueda
         <div className="text-center py-8">
           <AlertCircle className="w-12 h-12 text-[#90A4AE] mx-auto mb-3" />
@@ -249,12 +273,12 @@ export const Contacts = ({
       ) : (
         // Grid de contactos
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredContacts.map((contact) => (
+          {filteredAndSortedContacts.map((contact) => (
             <ContactCard
               key={contact.id}
               contact={contact}
               onDelete={onDelete}
-              canDelete={user?.type !== 'invitado'}
+              canDelete={canDeleteContact(contact)}
               user={user}
             />
           ))}
@@ -270,6 +294,8 @@ export const Contacts = ({
           </div>
         </div>
       )}
+
+
     </div>
   );
 };

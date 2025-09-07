@@ -1,4 +1,4 @@
-// App.jsx - Actualizado con funcionalidad de contactos
+// App.jsx - Actualizado con funcionalidad de contactos corregida
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
@@ -15,7 +15,6 @@ import { useContacts } from './hooks/useContacts';
 import { notify } from './utils/notify';
 import { Toaster } from 'sonner';
 import { Companies } from './pages/Companies';
-import { useCompany } from './hooks/useCompany';
 
 function App() {
   // Estados de autenticación y carga
@@ -43,21 +42,12 @@ function App() {
   const {
     contacts,
     loading: contactsLoading,
-    error: contactsError,
     createContact,
     deleteContact: removeContact,
     refreshContacts,
     canCreateContact,
     canDeleteContact
   } = useContacts(user);
-
-  const {
-    companies,
-    loading: companiesLoading,
-    error: companiesError,
-    fetchCompanies: refreshCompanies,
-    deleteCompany: handleDeleteCompany,
-  } = useCompany();
 
 
   // Estados de UI
@@ -133,7 +123,14 @@ function App() {
   const handleCreateContact = async (contactData) => {
     try {
       setActionLoading(true);
-      const result = await createContact(contactData);
+      
+      // Agregar el authorId al contactData
+      const contactWithAuthor = {
+        ...contactData,
+        authorId: user.id
+      };
+
+      const result = await createContact(contactWithAuthor);
 
       if (result.success) {
         setCurrentPage('contacts');
@@ -293,12 +290,8 @@ function App() {
         return (
           <Contacts
             user={user}
-            contacts={contacts}
             onCreateContact={() => setCurrentPage('create-contact')}
             onDelete={handleDeleteContact}
-            loading={contactsLoading}
-            error={contactsError}
-            onRefresh={refreshContacts}
             canCreateContact={canCreateContact()}
           />
         );
@@ -312,17 +305,11 @@ function App() {
             user={user}
           />
         );
+
       case 'companies':
         return (
           <Companies
-            user={user}
-            companies={companies}
-            onCreateCompany={() => setCurrentPage('create-company')}
-            onDelete={handleDeleteCompany}
-            loading={companiesLoading}
-            error={companiesError}
-            onRefresh={refreshCompanies}           
-          />
+            user={user}          />
         );
 
       default: // templates

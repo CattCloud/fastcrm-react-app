@@ -32,7 +32,7 @@ export const useContacts = (user) => {
         fetchedContacts = await getContactsByAuthor(user.id);
       }
 
-      console.log('Contactos obtenidos:', fetchedContacts);
+      //console.log('Contactos obtenidos:', fetchedContacts);
       setContacts(fetchedContacts);
     } catch (err) {
       console.error('Error al cargar contactos:', err);
