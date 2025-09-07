@@ -3,7 +3,7 @@ Sistema de gestión de relaciones con clientes (CRM) desarrollado con React y Ta
 
 ## Deploy
 
-🌐 **[Ver Pagina Web](https://fastcrm-react-app-production.up.railway.app/)** - Deploy en Netlify
+🌐 **[Ver Pagina Web](https://fastcrm-react-app-production.up.railway.app/)** - Deploy en Railway
 
 ## Tabla de Contenidos
 
