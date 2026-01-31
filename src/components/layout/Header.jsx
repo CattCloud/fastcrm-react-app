@@ -249,6 +249,38 @@ export const Header = ({ user, onLogin, onRegister, onLogout, onToggleSidebar, l
               {isSubmitting ? 'Iniciando...' : 'Iniciar Sesión'}
             </Button>
           </div>
+
+          {/* Demo Credentials */}
+          <div className="mt-6 pt-4 border-t border-[#E3F2FD]">
+            <p className="text-xs text-[#90A4AE] mb-3 text-center font-medium">
+              Cuentas de prueba disponibles
+            </p>
+            <div className="space-y-2">
+              <div className="bg-[#E3F2FD] rounded-md p-3">
+                <p className="text-xs font-semibold text-[#0D47A1] mb-1"> Administrador</p>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#546E7A]">Usuario:</span>
+                  <code className="bg-white px-2 py-1 rounded text-[#263238] font-mono">admin</code>
+                </div>
+                <div className="flex items-center justify-between text-xs mt-1">
+                  <span className="text-[#546E7A]">Contraseña:</span>
+                  <code className="bg-white px-2 py-1 rounded text-[#263238] font-mono">Admin2024!</code>
+                </div>
+              </div>
+
+              <div className="bg-[#F8FAFC] rounded-md p-3 border border-[#E3F2FD]">
+                <p className="text-xs font-semibold text-[#00A4EF] mb-1"> Usuario Demo</p>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#546E7A]">Usuario:</span>
+                  <code className="bg-white px-2 py-1 rounded text-[#263238] font-mono">demo_user</code>
+                </div>
+                <div className="flex items-center justify-between text-xs mt-1">
+                  <span className="text-[#546E7A]">Contraseña:</span>
+                  <code className="bg-white px-2 py-1 rounded text-[#263238] font-mono">Demo2024!</code>
+                </div>
+              </div>
+            </div>
+          </div>
         </form>
       </Modal>
 
