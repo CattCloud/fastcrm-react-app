@@ -1,9 +1,6 @@
 # FastCRM - Frontend React App
 Sistema de gestión de relaciones con clientes (CRM) desarrollado con React y Tailwind CSS. Interfaz moderna y responsiva para la gestión completa de plantillas, contactos, empresas y logs de comunicación.
 
-## Deploy
-
-🌐 **[Ver Pagina Web](https://fastcrm-react-app-production.up.railway.app/)** - Deploy en Railway
 
 ## Tabla de Contenidos
 
